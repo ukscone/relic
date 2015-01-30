@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -88,12 +88,12 @@
 /**
  * Positive sign of a multiple precision integer.
  */
-#define BN_POS		(0)
+#define BN_POS		0
 
 /**
  * Negative sign of a multiple precision integer.
  */
-#define BN_NEG		(1)
+#define BN_NEG		1
 
 /*============================================================================*/
 /* Type definitions                                                           */
@@ -573,6 +573,15 @@ void bn_set_2b(bn_t a, int b);
  * @param[in] bits			- the number of bits.
  */
 void bn_rand(bn_t a, int sign, int bits);
+
+/**
+ * Assigns a non-zero random value to a multiple precision integer with absolute
+ * value smaller than a given modulus.
+ *
+ * @param[out] a			- the multiple precision integer to assign.
+ * @param[in] b				- the modulus.
+ */
+void bn_rand_mod(bn_t a, bn_t b);
 
 /**
  * Prints a multiple precision integer to standard output.
@@ -1303,16 +1312,12 @@ void bn_rec_naf(int8_t *naf, int *len, const bn_t k, int w);
  * @param[out] tnaf			- the recoded integer.
  * @param[out] len			- the number of bytes written.
  * @param[in] k				- the integer to recode.
- * @param[in] vm			- the V_m curve parameter.
- * @param[in] s0			- the S_0 curve parameter.
- * @param[in] s1			- the S_1 curve parameter.
  * @param[in] u				- the u curve parameter.
  * @param[in] m				- the extension degree of the binary field.
  * @param[in] w				- the window size in bits.
  * @throw ERR_NO_BUFFER		- if the buffer capacity is insufficient.
  */
-void bn_rec_tnaf(int8_t *tnaf, int *len, const bn_t k, const bn_t vm,
-		const bn_t s0, const bn_t s1, int8_t u, int m, int w);
+void bn_rec_tnaf(int8_t *tnaf, int *len, const bn_t k, int8_t u, int m, int w);
 
 /**
  * Recodes an integer in regular fixed-length width-w \tau-NAF.
@@ -1320,16 +1325,12 @@ void bn_rec_tnaf(int8_t *tnaf, int *len, const bn_t k, const bn_t vm,
  * @param[out] tnaf			- the recoded integer.
  * @param[out] len			- the number of bytes written.
  * @param[in] k				- the integer to recode.
- * @param[in] vm			- the V_m curve parameter.
- * @param[in] s0			- the S_0 curve parameter.
- * @param[in] s1			- the S_1 curve parameter.
  * @param[in] u				- the u curve parameter.
  * @param[in] m				- the extension degree of the binary field.
  * @param[in] w				- the window size in bits.
  * @throw ERR_NO_BUFFER		- if the buffer capacity is insufficient.
  */
-void bn_rec_rtnaf(int8_t *tnaf, int *len, const bn_t k, const bn_t vm,
-		const bn_t s0, const bn_t s1, int8_t u, int m, int w);
+void bn_rec_rtnaf(int8_t *tnaf, int *len, const bn_t k, int8_t u, int m, int w);
 
 /**
  * Write the constants needed for \tau-NAF recoding as a set of \alpha_u = 
@@ -1349,14 +1350,10 @@ void bn_rec_tnaf_get(int8_t *t, int8_t *beta, int8_t *gama, int8_t u, int w);
  * @param[out] r0		- the first half of the result.
  * @param[out] r1		- the second half of the result.
  * @param[in] k			- the number to reduce.
- * @param[in] vm		- the V_m curve parameter.
- * @param[in] s0		- the S_0 curve parameter.
- * @param[in] s1		- the S_1 curve parameter.
  * @param[in] u			- the u curve parameter.
  * @param[in] m			- the extension degree of the binary field.
  */
-void bn_rec_tnaf_mod(bn_t r0, bn_t r1, const bn_t k, const bn_t vm,
-		const bn_t s0, const bn_t s1, int u, int m);
+void bn_rec_tnaf_mod(bn_t r0, bn_t r1, const bn_t k, int u, int m);
 
 /**
  * Recodes an integer in regular fixed-length width-w NAF.

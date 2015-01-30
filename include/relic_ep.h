@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -1098,7 +1098,7 @@ void ep_pck(ep_t r, const ep_t p);
  *
  * @param[out] r			- the result.
  * @param[in] p				- the point to decompress.
- * @return if the decompression was successful
+ * @return a boolean value indicating if the decompression was successful.
  */
 int ep_upk(ep_t r, const ep_t p);
 

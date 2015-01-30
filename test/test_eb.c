@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -602,8 +602,7 @@ static int multiplication(void) {
 		} TEST_END;
 
 		TEST_BEGIN("generator multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_gen(r, k);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -611,8 +610,7 @@ static int multiplication(void) {
 
 #if EB_MUL == BASIC || !defined(STRIP)
 		TEST_BEGIN("binary point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_basic(r, p, k);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -621,8 +619,7 @@ static int multiplication(void) {
 
 #if EB_MUL == LODAH || !defined(STRIP)
 		TEST_BEGIN("lopez-dahab point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_lodah(r, p, k);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -632,8 +629,7 @@ static int multiplication(void) {
 
 #if EB_MUL == LWNAF || !defined(STRIP)
 		TEST_BEGIN("left-to-right w-(t)naf point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_lwnaf(r, p, k);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -643,8 +639,7 @@ static int multiplication(void) {
 
 #if EB_MUL == RWNAF || !defined(STRIP)
 		TEST_BEGIN("right-to-left w-(t)naf point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_rwnaf(r, p, k);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -654,8 +649,7 @@ static int multiplication(void) {
 
 #if EB_MUL == HALVE || !defined(STRIP)
 		TEST_BEGIN("point multiplication by halving is correct") {
-			bn_rand(k, BN_POS, FB_BITS);
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_halve(r, p, k);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -715,8 +709,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre(t, p);
 			eb_mul_fix(q, (const eb_t *)t, k);
@@ -732,8 +725,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("binary fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre_basic(t, p);
 			eb_mul_fix_basic(q, (const eb_t *)t, k);
@@ -750,8 +742,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("yao windowing fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre_yaowi(t, p);
 			eb_mul_fix_yaowi(q, (const eb_t *)t, k);
@@ -768,8 +759,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("naf windowing fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre_nafwi(t, p);
 			eb_mul_fix_nafwi(q, (const eb_t *)t, k);
@@ -786,8 +776,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("single-table comb fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre_combs(t, p);
 			eb_mul_fix_combs(q, (const eb_t *)t, k);
@@ -804,8 +793,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("double-table comb fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre_combd(t, p);
 			eb_mul_fix_combd(q, (const eb_t *)t, k);
@@ -822,8 +810,7 @@ static int fixed(void) {
 			eb_new(t[i]);
 		}
 		TEST_BEGIN("w(t)naf fixed point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
+			bn_rand_mod(k, n);
 			eb_mul(q, p, k);
 			eb_mul_pre_lwnaf(t, p);
 			eb_mul_fix_lwnaf(q, (const eb_t *)t, k);
@@ -872,10 +859,8 @@ static int simultaneous(void) {
 		eb_curve_get_ord(n);
 
 		TEST_BEGIN("simultaneous point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
-			bn_rand(l, BN_POS, bn_bits(n));
-			bn_mod(l, l, n);
+			bn_rand_mod(k, n);
+			bn_rand_mod(l, n);
 			eb_rand(p);
 			eb_rand(q);
 			eb_mul_sim(r, p, k, q, l);
@@ -888,10 +873,8 @@ static int simultaneous(void) {
 
 #if EB_SIM == BASIC || !defined(STRIP)
 		TEST_BEGIN("basic simultaneous point multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
-			bn_rand(l, BN_POS, bn_bits(n));
-			bn_mod(l, l, n);
+			bn_rand_mod(k, n);
+			bn_rand_mod(l, n);
 			eb_mul_sim(r, p, k, q, l);
 			eb_mul_sim_basic(q, p, k, q, l);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -900,10 +883,8 @@ static int simultaneous(void) {
 
 #if EB_SIM == TRICK || !defined(STRIP)
 		TEST_BEGIN("shamir's trick for simultaneous multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
-			bn_rand(l, BN_POS, bn_bits(n));
-			bn_mod(l, l, n);
+			bn_rand_mod(k, n);
+			bn_rand_mod(l, n);
 			eb_mul_sim(r, p, k, q, l);
 			eb_mul_sim_trick(q, p, k, q, l);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -912,10 +893,8 @@ static int simultaneous(void) {
 
 #if EB_SIM == INTER || !defined(STRIP)
 		TEST_BEGIN("interleaving for simultaneous multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
-			bn_rand(l, BN_POS, bn_bits(n));
-			bn_mod(l, l, n);
+			bn_rand_mod(k, n);
+			bn_rand_mod(l, n);
 			eb_mul_sim(r, p, k, q, l);
 			eb_mul_sim_inter(q, p, k, q, l);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -924,10 +903,8 @@ static int simultaneous(void) {
 
 #if EB_SIM == JOINT || !defined(STRIP)
 		TEST_BEGIN("jsf for simultaneous multiplication is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
-			bn_rand(l, BN_POS, bn_bits(n));
-			bn_mod(l, l, n);
+			bn_rand_mod(k, n);
+			bn_rand_mod(l, n);
 			eb_mul_sim(r, p, k, q, l);
 			eb_mul_sim_joint(q, p, k, q, l);
 			TEST_ASSERT(eb_cmp(q, r) == CMP_EQ, end);
@@ -935,10 +912,8 @@ static int simultaneous(void) {
 #endif
 
 		TEST_BEGIN("simultaneous multiplication with generator is correct") {
-			bn_rand(k, BN_POS, bn_bits(n));
-			bn_mod(k, k, n);
-			bn_rand(l, BN_POS, bn_bits(n));
-			bn_mod(l, l, n);
+			bn_rand_mod(k, n);
+			bn_rand_mod(l, n);
 			eb_mul_sim_gen(r, k, q, l);
 			eb_curve_get_gen(p);
 			eb_mul_sim(q, p, k, q, l);

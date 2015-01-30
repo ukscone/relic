@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -157,7 +157,7 @@ typedef bdpe_st *bdpe_t;
 #endif
 
 /**
- * Represents a SOK key pair.
+ * Represents a SOKAKA key pair.
  */
 typedef struct _sokaka {
 	/** The private key in G_1. */
@@ -167,12 +167,45 @@ typedef struct _sokaka {
 } sokaka_st;
 
 /**
- * Pointer to SOK key pair.
+ * Pointer to SOKAKA key pair.
  */
 #if ALLOC == AUTO
 typedef sokaka_st sokaka_t[1];
 #else
 typedef sokaka_st *sokaka_t;
+#endif
+
+/**
+ * Represents a Boneh-Goh-Nissim cryptosystem key pair.
+ */
+typedef struct _bgn_t {
+	/** The first exponent. */
+	bn_t x;
+	/** The second exponent. */
+	bn_t y;
+	/** The third exponent. */
+	bn_t z;
+	/* The first element from the first group. */
+	g1_t gx;
+	/* The second element from the first group. */
+	g1_t gy;
+	/* The thirs element from the first group. */
+	g1_t gz;
+	/* The first element from the second group. */
+	g2_t hx;
+	/* The second element from the second group. */
+	g2_t hy;
+	/* The third element from the second group. */
+	g2_t hz;
+} bgn_st;
+
+/**
+ * Pointer to a a Boneh-Goh-Nissim cryptosystem key pair.
+ */
+#if ALLOC == AUTO
+typedef bgn_st bgn_t[1];
+#else
+typedef bgn_st *bgn_t;
 #endif
 
 /*============================================================================*/
@@ -597,6 +630,126 @@ typedef sokaka_st *sokaka_t;
 #endif
 
 /**
+ * Initializes a BGN key pair with a null value.
+ *
+ * @param[out] A			- the key pair to initialize.
+ */
+#if ALLOC == AUTO
+#define bgn_null(A)			/* empty */
+#else
+#define bgn_null(A)			A = NULL;
+#endif
+
+/**
+ * Calls a function to allocate and initialize a BGN key pair.
+ *
+ * @param[out] A			- the new key pair.
+ */
+#if ALLOC == DYNAMIC
+#define bgn_new(A)															\
+	A = (bgn_t)calloc(1, sizeof(bgn_st));									\
+	if (A == NULL) {														\
+		THROW(ERR_NO_MEMORY);												\
+	}																		\
+	bn_new((A)->x);															\
+	bn_new((A)->y);															\
+	bn_new((A)->z);															\
+	g1_new((A)->gx);														\
+	g1_new((A)->gy);														\
+	g1_new((A)->gz);														\
+	g2_new((A)->hx);														\
+	g2_new((A)->hy);														\
+	g2_new((A)->hz);														\
+
+#elif ALLOC == STATIC
+#define bgn_new(A)															\
+	A = (bgn_t)alloca(sizeof(bgn_st));										\
+	if (A == NULL) {														\
+		THROW(ERR_NO_MEMORY);												\
+	}																		\
+	bn_new((A)->x);															\
+	bn_new((A)->y);															\
+	bn_new((A)->z);															\
+	g1_new((A)->gx);														\
+	g1_new((A)->gy);														\
+	g1_new((A)->gz);														\
+	g2_new((A)->hx);														\
+	g2_new((A)->hy);														\
+	g2_new((A)->hz);														\
+
+#elif ALLOC == AUTO
+#define bgn_new(A)			/* empty */
+
+#elif ALLOC == STACK
+#define bgn_new(A)															\
+	A = (bgn_t)alloca(sizeof(bgn_st));										\
+	bn_new((A)->x);															\
+	bn_new((A)->y);															\
+	bn_new((A)->z);															\
+	g1_new((A)->gx);														\
+	g1_new((A)->gy);														\
+	g1_new((A)->gz);														\
+	g2_new((A)->hx);														\
+	g2_new((A)->hy);														\
+	g2_new((A)->hz);														\
+
+#endif
+
+/**
+ * Calls a function to clean and free a BGN key pair.
+ *
+ * @param[out] A			- the key pair to clean and free.
+ */
+#if ALLOC == DYNAMIC
+#define bgn_free(A)															\
+	if (A != NULL) {														\
+		bn_free((A)->x);													\
+		bn_free((A)->y);													\
+		bn_free((A)->z);													\
+		g1_free((A)->gx);													\
+		g1_free((A)->gy);													\
+		g1_free((A)->gz);													\
+		g2_free((A)->hx);													\
+		g2_free((A)->hy);													\
+		g2_free((A)->hz);													\
+		free(A);															\
+		A = NULL;															\
+	}
+
+#elif ALLOC == STATIC
+#define bgn_free(A)															\
+	if (A != NULL) {														\
+		bn_free((A)->x);													\
+		bn_free((A)->y);													\
+		bn_free((A)->z);													\
+		g1_free((A)->gx);													\
+		g1_free((A)->gy);													\
+		g1_free((A)->gz);													\
+		g2_free((A)->hx);													\
+		g2_free((A)->hy);													\
+		g2_free((A)->hz);													\
+		A = NULL;															\
+	}																		\
+
+#elif ALLOC == AUTO
+#define bgn_free(A)			/* empty */
+
+#elif ALLOC == STACK
+#define bgn_free(A)															\
+	bn_free((A)->x);														\
+	bn_free((A)->y);														\
+	bn_free((A)->z);														\
+	g1_free((A)->gx);														\
+	g1_free((A)->gy);														\
+	g1_free((A)->gz);														\
+	g2_free((A)->hx);														\
+	g2_free((A)->hy);														\
+	g2_free((A)->hz);														\
+	A = NULL;																\
+
+#endif
+
+/**
  * Generates a new RSA key pair.
  *
  * @param[out] PB			- the public key.
@@ -648,7 +801,7 @@ typedef sokaka_st *sokaka_t;
 /*============================================================================*/
 
 /**
- * Generates a new key pair for basic RSA algorithm.
+ * Generates a key pair for the basic RSA algorithm.
  *
  * @param[out] pub			- the public key.
  * @param[out] prv			- the private key.
@@ -658,7 +811,7 @@ typedef sokaka_st *sokaka_t;
 int cp_rsa_gen_basic(rsa_t pub, rsa_t prv, int bits);
 
 /**
- * Generates a new key RSA pair for fast operations with the CRT optimization.
+ * Generates a key pair for fast RSA operations with the CRT optimization.
  *
  * @param[out] pub			- the public key.
  * @param[out] prv			- the private key.
@@ -745,13 +898,13 @@ int cp_rsa_sig_quick(uint8_t *sig, int *sig_len, uint8_t *msg, int msg_len,
  * @param[in] msg_len		- the message length in bytes.
  * @param[in] hash			- the flag to indicate the message format.
  * @param[in] pub			- the public key.
- * @return 1 if the signature is valid, 0 otherwise.
+ * @return a boolean value indicating if the signature is valid.
  */
 int cp_rsa_ver(uint8_t *sig, int sig_len, uint8_t *msg, int msg_len, int hash,
 		rsa_t pub);
 
 /**
- * Generates a new key pair for the Rabin cryptosystem.
+ * Generates a key pair for the Rabin cryptosystem.
  *
  * @param[out] pub			- the public key.
  * @param[out] prv			- the private key,
@@ -787,7 +940,7 @@ int cp_rabin_dec(uint8_t *out, int *out_len, uint8_t *in, int in_len,
 		rabin_t prv);
 
 /**
- * Generates a new key pair for Benaloh's Dense Probabilistic Encryption.
+ * Generates a key pair for Benaloh's Dense Probabilistic Encryption.
  *
  * @param[out] pub			- the public key.
  * @param[out] prv			- the private key.
@@ -820,7 +973,7 @@ int cp_bdpe_enc(uint8_t *out, int *out_len, dig_t in, bdpe_t pub);
 int cp_bdpe_dec(dig_t *out, uint8_t *in, int in_len, bdpe_t prv);
 
 /**
- * Generates a new key pair for Paillier's Homomorphic Probabilistic Encryption.
+ * Generates a key pair for Paillier's Homomorphic Probabilistic Encryption.
  *
  * @param[out] n			- the public key.
  * @param[out] l			- the private key.
@@ -861,6 +1014,7 @@ int cp_phpe_dec(uint8_t *out, int out_len, uint8_t *in, int in_len, bn_t n,
  *
  * @param[out] d			- the private key.
  * @param[in] q				- the public key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_ecdh_gen(bn_t d, ec_t q);
 
@@ -881,7 +1035,7 @@ int cp_ecdh_key(uint8_t *key, int key_len, bn_t d, ec_t q);
  * Should also be used to generate the ephemeral key pair.
  *
  * @param[out] d			- the private key.
- * @param[in] q				- the public key.
+ * @param[out] q				- the public key.
  */
 int cp_ecmqv_gen(bn_t d, ec_t q);
 
@@ -942,6 +1096,7 @@ int cp_ecies_dec(uint8_t *out, int *out_len, ec_t r, uint8_t *in, int in_len,
  *
  * @param[out] d			- the private key.
  * @param[in] q				- the public key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_ecdsa_gen(bn_t d, ec_t q);
 
@@ -954,6 +1109,7 @@ int cp_ecdsa_gen(bn_t d, ec_t q);
  * @param[in] len				- the message length in bytes.
  * @param[in] hash				- the flag to indicate the message format.
  * @param[in] d					- the private key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_ecdsa_sig(bn_t r, bn_t s, uint8_t *msg, int len, int hash, bn_t d);
 
@@ -966,6 +1122,7 @@ int cp_ecdsa_sig(bn_t r, bn_t s, uint8_t *msg, int len, int hash, bn_t d);
  * @param[in] len				- the message length in bytes.
  * @param[in] hash				- the flag to indicate the message format.
  * @param[in] q					- the public key.
+ * @return a boolean value indicating if the signature is valid.
  */
 int cp_ecdsa_ver(bn_t r, bn_t s, uint8_t *msg, int len, int hash, ec_t q);
 
@@ -974,6 +1131,7 @@ int cp_ecdsa_ver(bn_t r, bn_t s, uint8_t *msg, int len, int hash, ec_t q);
  *
  * @param[out] d			- the private key.
  * @param[in] q				- the public key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_ecss_gen(bn_t d, ec_t q);
 
@@ -985,6 +1143,7 @@ int cp_ecss_gen(bn_t d, ec_t q);
  * @param[in] msg				- the message to sign.
  * @param[in] len				- the message length in bytes.
  * @param[in] d					- the private key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_ecss_sig(bn_t e, bn_t s, uint8_t *msg, int len, bn_t d);
 
@@ -997,24 +1156,27 @@ int cp_ecss_sig(bn_t e, bn_t s, uint8_t *msg, int len, bn_t d);
  * @param[in] msg				- the message to sign.
  * @param[in] len				- the message length in bytes.
  * @param[in] q					- the public key.
+ * @return a boolean value indicating if the signature is valid.
  */
 int cp_ecss_ver(bn_t e, bn_t s, uint8_t *msg, int len, ec_t q);
 
 /**
- * Generates a master key for the SOK identity-based non-interactive
+ * Generates a master key for the SOKAKA identity-based non-interactive
  * authenticated key agreement protocol.
  *
  * @param[out] master			- the master key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_sokaka_gen(bn_t master);
 
 /**
- * Generates a private key for the SOK protocol.
+ * Generates a private key for the SOKAKA protocol.
  *
  * @param[out] k				- the private key.
  * @param[in] id				- the identity.
  * @param[in] len				- the length of identity in bytes.
  * @param[in] master			- the master key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_sokaka_gen_prv(sokaka_t k, char *id, int len, bn_t master);
 
@@ -1028,9 +1190,134 @@ int cp_sokaka_gen_prv(sokaka_t k, char *id, int len, bn_t master);
  * @param[in] k					- the private key of the first identity.
  * @param[in] id2				- the second identity.
  * @param[in] len2				- the length of the second identity in bytes.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
  */
 int cp_sokaka_key(uint8_t *key, unsigned int key_len, char *id1, int len1,
 		sokaka_t k, char *id2, int len2);
+
+/**
+ * Generates a master key for a Private Key Generator (PKG) in the
+ * Boneh-Franklin Identity-Based Encryption (BF-IBE).
+ *
+ * @param[out] master			- the master key.
+ * @param[out] pub 				- the public key of the private key generator.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_ibe_gen(bn_t master, g1_t pub);
+
+/**
+ * Generates a BGN key pair.
+ *
+ * @param[out] pub 				- the public key.
+ * @param[out] prv 				- the private key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_gen(bgn_t pub, bgn_t prv);
+
+/**
+ * Encrypts in G_1 using the BGN cryptosystem.
+ *
+ * @param[out] out 				- the ciphertext.
+ * @param[in] in 				- the plaintext as a small integer.
+ * @param[in] pub 				- the public key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_enc1(g1_t out[2], dig_t in, bgn_t pub);
+
+/**
+ * Decrypts in G_1 using the BGN cryptosystem.
+ *
+ * @param[out] out 				- the decrypted small integer.
+ * @param[in] in 				- the ciphertext.
+ * @param[in] prv 				- the private key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_dec1(dig_t *out, g1_t in[2], bgn_t prv);
+
+/**
+ * Encrypts in G_2 using the BGN cryptosystem.
+ *
+ * @param[out] c 				- the ciphertext.
+ * @param[in] m 				- the plaintext as a small integer.
+ * @param[in] pub 				- the public key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_enc2(g2_t out[2], dig_t in, bgn_t pub);
+
+/**
+ * Decrypts in G_2 using the BGN cryptosystem.
+ *
+ * @param[out] out 				- the decrypted small integer.
+ * @param[in] c 				- the ciphertext.
+ * @param[in] prv 				- the private key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_dec2(dig_t *out, g2_t in[2], bgn_t prv);
+
+/**
+ * Adds homomorphically two BGN ciphertexts in G_T.
+ *
+ * @param[out] e 				- the resulting ciphertext.
+ * @param[in] c 				- the first ciphertext to add.
+ * @param[in] d 				- the second ciphertext to add.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_add(gt_t e[4], gt_t c[4], gt_t d[4]);
+
+/**
+ * Multiplies homomorphically two BGN ciphertexts in G_T.
+ *
+ * @param[out] e 				- the resulting ciphertext.
+ * @param[in] c 				- the first ciphertext to add.
+ * @param[in] d 				- the second ciphertext to add.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_mul(gt_t e[4], g1_t c[2], g2_t d[2]);
+
+/**
+ * Decrypts in G_T using the BGN cryptosystem.
+ * @param[out] out 				- the decrypted small integer.
+ * @param[in] c 				- the ciphertext.
+ * @param[in] prv 				- the private key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_bgn_dec(dig_t *out, gt_t in[4], bgn_t prv);
+
+/**
+ * Generates a private key for a user in the BF-IBE protocol.
+ *
+ * @param[out] prv				- the private key.
+ * @param[in] id				- the identity.
+ * @param[in] len				- the length of identity in bytes.
+ * @param[in] s					- the master key.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_ibe_gen_prv(g2_t prv, char *id, int len, bn_t master);
+
+/**
+ * Encrypts a message in the BF-IBE protocol.
+ *
+ * @param[out] out			- the output buffer.
+ * @param[in, out] out_len	- the buffer capacity and number of bytes written.
+ * @param[in] in			- the input buffer.
+ * @param[in] in_len		- the number of bytes to encrypt.
+ * @param[in] pub			- the public key of the PKG.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_ibe_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len,
+		char *id, int len, g1_t pub);
+
+/**
+ * Decrypts a message in the BF-IBE protocol.
+ *
+ * @param[out] out			- the output buffer.
+ * @param[in, out] out_len	- the buffer capacity and number of bytes written.
+ * @param[in] in			- the input buffer.
+ * @param[in] in_len		- the number of bytes to decrypt.
+ * @param[in] pub			- the private key of the user.
+ * @return STS_OK if no errors occurred, STS_ERR otherwise.
+ */
+int cp_ibe_dec(uint8_t *out, int *out_len, uint8_t *in, int in_len, g2_t prv);
 
 /**
  * Generates a BLS key pair.
@@ -1057,7 +1344,7 @@ int cp_bls_sig(g1_t s, uint8_t *msg, int len, bn_t d);
  * @param[in] msg				- the message to sign.
  * @param[in] len				- the message length in bytes.
  * @param[in] q					- the public key.
- * @return a boolean value indicating the verification result.
+ * @return a boolean value indicating if the signature is valid.
  */
 int cp_bls_ver(g1_t s, uint8_t *msg, int len, g2_t q);
 

@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -141,6 +141,9 @@
 #define util_printf 	PREFIX(util_printf)
 #define util_print_dig 	PREFIX(util_print_dig)
 
+#undef conf_print
+#define conf_print       PREFIX(conf_print)
+
 #undef dv_t
 #define dv_t	PREFIX(dv_t)
 
@@ -192,6 +195,7 @@
 #undef bn_set_dig
 #undef bn_set_2b
 #undef bn_rand
+#undef bn_rand_mod
 #undef bn_print
 #undef bn_size_str
 #undef bn_read_str
@@ -292,6 +296,7 @@
 #define bn_set_dig 	PREFIX(bn_set_dig)
 #define bn_set_2b 	PREFIX(bn_set_2b)
 #define bn_rand 	PREFIX(bn_rand)
+#define bn_rand_mod 	PREFIX(bn_rand_mod)
 #define bn_print 	PREFIX(bn_print)
 #define bn_size_str 	PREFIX(bn_size_str)
 #define bn_read_str 	PREFIX(bn_read_str)
@@ -1042,9 +1047,6 @@
 #undef eb_curve_get_tab
 #undef eb_curve_get_ord
 #undef eb_curve_get_cof
-#undef eb_curve_get_vm
-#undef eb_curve_get_s0
-#undef eb_curve_get_s1
 #undef eb_curve_set
 #undef eb_param_set
 #undef eb_param_set_any
@@ -1117,9 +1119,6 @@
 #define eb_curve_get_tab 	PREFIX(eb_curve_get_tab)
 #define eb_curve_get_ord 	PREFIX(eb_curve_get_ord)
 #define eb_curve_get_cof 	PREFIX(eb_curve_get_cof)
-#define eb_curve_get_vm 	PREFIX(eb_curve_get_vm)
-#define eb_curve_get_s0 	PREFIX(eb_curve_get_s0)
-#define eb_curve_get_s1 	PREFIX(eb_curve_get_s1)
 #define eb_curve_set 	PREFIX(eb_curve_set)
 #define eb_param_set 	PREFIX(eb_param_set)
 #define eb_param_set_any 	PREFIX(eb_param_set_any)
@@ -1844,6 +1843,18 @@
 #undef cp_sokaka_gen
 #undef cp_sokaka_gen_prv
 #undef cp_sokaka_key
+#undef cp_ibe_gen
+#undef cp_bgn_gen
+#undef cp_bgn_enc1
+#undef cp_bgn_dec1
+#undef cp_bgn_enc2
+#undef cp_bgn_dec2
+#undef cp_bgn_add
+#undef cp_bgn_mul
+#undef cp_bgn_dec
+#undef cp_ibe_gen_prv
+#undef cp_ibe_enc
+#undef cp_ibe_dec
 #undef cp_bls_gen
 #undef cp_bls_sig
 #undef cp_bls_ver
@@ -1884,6 +1895,18 @@
 #define cp_sokaka_gen 	PREFIX(cp_sokaka_gen)
 #define cp_sokaka_gen_prv 	PREFIX(cp_sokaka_gen_prv)
 #define cp_sokaka_key 	PREFIX(cp_sokaka_key)
+#define cp_ibe_gen 	PREFIX(cp_ibe_gen)
+#define cp_bgn_gen 	PREFIX(cp_bgn_gen)
+#define cp_bgn_enc1 	PREFIX(cp_bgn_enc1)
+#define cp_bgn_dec1 	PREFIX(cp_bgn_dec1)
+#define cp_bgn_enc2 	PREFIX(cp_bgn_enc2)
+#define cp_bgn_dec2 	PREFIX(cp_bgn_dec2)
+#define cp_bgn_add 	PREFIX(cp_bgn_add)
+#define cp_bgn_mul 	PREFIX(cp_bgn_mul)
+#define cp_bgn_dec 	PREFIX(cp_bgn_dec)
+#define cp_ibe_gen_prv 	PREFIX(cp_ibe_gen_prv)
+#define cp_ibe_enc 	PREFIX(cp_ibe_enc)
+#define cp_ibe_dec 	PREFIX(cp_ibe_dec)
 #define cp_bls_gen 	PREFIX(cp_bls_gen)
 #define cp_bls_sig 	PREFIX(cp_bls_sig)
 #define cp_bls_ver 	PREFIX(cp_bls_ver)

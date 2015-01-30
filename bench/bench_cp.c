@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -344,8 +344,6 @@ static void ecies(void) {
 	ec_new(r);
 	bn_new(d);
 
-	rand_bytes(in, sizeof(in));
-
 	BENCH_BEGIN("cp_ecies_gen") {
 		BENCH_ADD(cp_ecies_gen(d, q));
 	}
@@ -365,7 +363,7 @@ static void ecies(void) {
 		out_len = sizeof(out);
 		rand_bytes(in, sizeof(in));
 		cp_ecies_enc(r, out, &out_len, in, in_len, q);
-		BENCH_ADD(cp_ecies_dec(out, &out_len, r, out, out_len, d));
+		BENCH_ADD(cp_ecies_dec(in, &in_len, r, out, out_len, d));
 	}
 	BENCH_END;
 
@@ -474,8 +472,6 @@ static void sokaka(void) {
 	sokaka_new(k);
 	bn_new(s);
 
-	cp_sokaka_gen(s);
-
 	BENCH_BEGIN("cp_sokaka_gen") {
 		BENCH_ADD(cp_sokaka_gen(s));
 	}
@@ -504,6 +500,131 @@ static void sokaka(void) {
 
 	sokaka_free(k);
 	bn_free(s);
+}
+
+static void ibe(void) {
+	bn_t s;
+	g1_t pub;
+	g2_t prv;
+	uint8_t in[10], out[10 + 2 * FP_BYTES + 1];
+	char id[5] = { 'A', 'l', 'i', 'c', 'e' };
+	int in_len, out_len;
+
+	bn_null(s);
+	g1_null(pub);
+	g2_null(prv);
+
+	bn_new(s);
+	g1_new(pub);
+	g2_new(prv);
+
+	rand_bytes(in, sizeof(in));
+
+	BENCH_BEGIN("cp_ibe_gen") {
+		BENCH_ADD(cp_ibe_gen(s, pub));
+	}
+	BENCH_END;
+
+	BENCH_BEGIN("cp_ibe_gen_prv") {
+		BENCH_ADD(cp_ibe_gen_prv(prv, id, sizeof(id), s));
+	}
+	BENCH_END;
+
+	BENCH_BEGIN("cp_ibe_enc") {
+		in_len = sizeof(in);
+		out_len = in_len + 2 * FP_BYTES + 1;
+		rand_bytes(in, sizeof(in));
+		BENCH_ADD(cp_ibe_enc(out, &out_len, in, in_len, id, sizeof(id), pub));
+		cp_ibe_dec(out, &out_len, out, out_len, prv);
+	}
+	BENCH_END;
+
+	BENCH_BEGIN("cp_ecies_dec") {
+		in_len = sizeof(in);
+		out_len = in_len + 2 * FP_BYTES + 1;
+		rand_bytes(in, sizeof(in));
+		cp_ibe_enc(out, &out_len, in, in_len, id, sizeof(id), pub);
+		BENCH_ADD(cp_ibe_dec(out, &out_len, out, out_len, prv));
+	}
+	BENCH_END;
+
+	bn_free(s);
+	g1_free(pub);
+	g2_free(prv);
+}
+
+static void bgn(void) {
+	g1_t c[2];
+	g2_t d[2];
+	gt_t e[4];
+	bgn_t pub, prv;
+	dig_t in;
+
+	g1_null(c[0]);
+	g1_null(c[1]);
+	g2_null(d[0]);
+	g2_null(d[1]);
+	bgn_null(pub);
+	bgn_null(prv);
+
+	g1_new(c[0]);
+	g1_new(c[1]);
+	g2_new(d[0]);
+	g2_new(d[1]);
+	bgn_new(pub);
+	bgn_new(prv);
+	for (int i = 0; i < 4; i++) {
+		gt_null(e[i]);
+		gt_new(e[i]);
+	}
+
+	BENCH_BEGIN("cp_bgn_gen") {
+		BENCH_ADD(cp_bgn_gen(pub, prv));
+	} BENCH_END;
+
+	in = 10;
+
+	BENCH_BEGIN("cp_bgn_enc1") {
+		BENCH_ADD(cp_bgn_enc1(c, in, pub));
+		cp_bgn_dec1(&in, c, prv);
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_bgn_dec1 (10)") {
+		cp_bgn_enc1(c, in, pub);
+		BENCH_ADD(cp_bgn_dec1(&in, c, prv));
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_bgn_enc2") {
+		BENCH_ADD(cp_bgn_enc2(d, in, pub));
+		cp_bgn_dec2(&in, d, prv);
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_bgn_dec2 (10)") {
+		cp_bgn_enc2(d, in, pub);
+		BENCH_ADD(cp_bgn_dec2(&in, d, prv));
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_bgn_mul") {
+		BENCH_ADD(cp_bgn_mul(e, c, d));
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_bgn_dec (100)") {
+		BENCH_ADD(cp_bgn_dec(&in, e, prv));
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_bgn_add") {
+		BENCH_ADD(cp_bgn_add(e, e, e));
+	} BENCH_END;
+
+	g1_free(c[0]);
+	g1_free(c[1]);
+	g2_free(d[0]);
+	g2_free(d[1]);
+	bgn_free(pub);
+	bgn_free(prv);
+	for (int i = 0; i < 4; i++) {
+		gt_free(e[i]);
+	}
 }
 
 static void bls(void) {
@@ -625,6 +746,8 @@ int main(void) {
 	util_banner("Protocols based on pairings:\n", 0);
 	if (pc_param_set_any() == STS_OK) {
 		sokaka();
+		ibe();
+		bgn();
 		bls();
 		bbs();
 	} else {

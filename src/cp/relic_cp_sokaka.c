@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -44,7 +44,7 @@
 /* Public definitions                                                         */
 /*============================================================================*/
 
-int cp_sokaka_gen(bn_t s) {
+int cp_sokaka_gen(bn_t master) {
 	bn_t n;
 	int result = STS_OK;
 
@@ -54,11 +54,7 @@ int cp_sokaka_gen(bn_t s) {
 		bn_new(n);
 
 		g1_get_ord(n);
-
-		do {
-			bn_rand(s, BN_POS, bn_bits(n));
-			bn_mod(s, s, n);
-		} while (bn_is_zero(s));
+		bn_rand_mod(master, n);
 	}
 	CATCH_ANY {
 		result = STS_ERR;
@@ -69,15 +65,15 @@ int cp_sokaka_gen(bn_t s) {
 	return result;
 }
 
-int cp_sokaka_gen_prv(sokaka_t k, char *id, int len, bn_t s) {
+int cp_sokaka_gen_prv(sokaka_t k, char *id, int len, bn_t master) {
 	if (pc_map_is_type1()) {
 		g1_map(k->s1, (uint8_t *)id, len);
-		g1_mul(k->s1, k->s1, s);
+		g1_mul(k->s1, k->s1, master);
 	} else {
 		g1_map(k->s1, (uint8_t *)id, len);
-		g1_mul(k->s1, k->s1, s);
+		g1_mul(k->s1, k->s1, master);
 		g2_map(k->s2, (uint8_t *)id, len);
-		g2_mul(k->s2, k->s2, s);
+		g2_mul(k->s2, k->s2, master);
 	}
 	return STS_OK;
 }
@@ -118,6 +114,7 @@ int cp_sokaka_key(uint8_t *key, unsigned int key_len, char *id1,
 				}
 			}
 		}
+
 		if (pc_map_is_type1()) {
 			g2_map(q, (uint8_t *)id2, len2);
 			pc_map(e, k->s1, q);
@@ -130,6 +127,7 @@ int cp_sokaka_key(uint8_t *key, unsigned int key_len, char *id1,
 				pc_map(e, p, k->s2);
 			}
 		}
+
 		/* Allocate size for storing the output. */
 		uint8_t buf[gt_size_bin(e, 0)];
 		gt_write_bin(buf, sizeof(buf), e, 0);

@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2014 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -776,6 +776,163 @@ static int sokaka(void) {
 	return code;
 }
 
+static int ibe(void) {
+	int code = STS_ERR;
+	bn_t s;
+	g1_t pub;
+	g2_t prv;
+	uint8_t in[10], out[10 + 2 * FP_BYTES + 1];
+	char id[5] = { 'A', 'l', 'i', 'c', 'e' };
+	int il, ol;
+	int result;
+
+	bn_null(s);
+	g1_null(pub);
+	g2_null(prv);
+
+	TRY {
+		bn_new(s);
+		g1_new(pub);
+		g2_new(prv);
+
+		result = cp_ibe_gen(s, pub);
+
+		TEST_BEGIN("boneh-franklin identity-based encryption/decryption is correct") {
+			TEST_ASSERT(result == STS_OK, end);
+			il = ol = 10;
+			ol += 1 + 2 * FP_BYTES;
+			rand_bytes(in, il);
+			TEST_ASSERT(cp_ibe_gen_prv(prv, id, 5, s) == STS_OK, end);
+			TEST_ASSERT(cp_ibe_enc(out, &ol, in, il, id, 5, pub) == STS_OK, end);
+			TEST_ASSERT(cp_ibe_dec(out, &il, out, ol, prv) == STS_OK, end);
+			TEST_ASSERT(memcmp(in, out, il) == 0, end);
+		} TEST_END;
+	} CATCH_ANY {
+		ERROR(end);
+	}
+	code = STS_OK;
+
+  end:
+	bn_free(s);
+	g1_free(pub);
+	g2_free(prv);
+	return code;
+}
+
+static int bgn(void) {
+	int result, code = STS_ERR;
+	g1_t c[2], d[2];
+	g2_t e[2], f[2];
+	gt_t g[4];
+	bgn_t pub, prv;
+	dig_t in, out, t;
+
+	g1_null(c[0]);
+	g1_null(c[1]);
+	g1_null(d[0]);
+	g1_null(d[1]);
+	g2_null(e[0]);
+	g2_null(e[1]);
+	g2_null(f[0]);
+	g2_null(f[1]);
+	bgn_null(pub);
+	bgn_null(prv);
+
+	TRY {
+		g1_new(c[0]);
+		g1_new(c[1]);
+		g1_new(d[0]);
+		g1_new(d[1]);
+		g2_new(e[0]);
+		g2_new(e[1]);
+		g2_new(f[0]);
+		g2_new(f[1]);
+		bgn_new(pub);
+		bgn_new(prv);
+		for (int i = 0; i < 4; i++) {
+			gt_null(g[i]);
+			gt_new(g[i]);
+		}
+
+		result = cp_bgn_gen(pub, prv);
+
+		TEST_BEGIN("boneh-go-nissim encryption/decryption is correct") {
+			TEST_ASSERT(result == STS_OK, end);
+			do {
+				rand_bytes((unsigned char *)&in, sizeof(dig_t));
+				in = in % 11;
+			} while (in == 0);
+			TEST_ASSERT(cp_bgn_enc1(c, in, pub) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_dec1(&out, c, prv) == STS_OK, end);
+			TEST_ASSERT(in == out, end);
+			TEST_ASSERT(cp_bgn_enc2(e, in, pub) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_dec2(&out, e, prv) == STS_OK, end);
+			TEST_ASSERT(in == out, end);
+		} TEST_END;
+
+		TEST_BEGIN("boneh-go-nissim encryption is additively homomorphic") {
+			do {
+				rand_bytes((unsigned char *)&in, sizeof(dig_t));
+				in = in % 11;
+				out = in % 7;
+			} while (in == 0 || out == 0);
+			TEST_ASSERT(cp_bgn_enc1(c, in, pub) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_enc1(d, out, pub) == STS_OK, end);
+			g1_add(c[0], c[0], d[0]);
+			g1_add(c[1], c[1], d[1]);
+			g1_norm(c[0], c[0]);
+			g1_norm(c[1], c[1]);
+			TEST_ASSERT(cp_bgn_dec1(&t, c, prv) == STS_OK, end);
+			TEST_ASSERT(in + out == t, end);
+			TEST_ASSERT(cp_bgn_enc2(e, in, pub) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_enc2(f, out, pub) == STS_OK, end);
+			g2_add(e[0], e[0], f[0]);
+			g2_add(e[1], e[1], f[1]);
+			g2_norm(e[0], e[0]);
+			g2_norm(e[1], e[1]);
+			TEST_ASSERT(cp_bgn_dec2(&t, e, prv) == STS_OK, end);
+			TEST_ASSERT(in + out == t, end);
+		} TEST_END;
+
+		TEST_BEGIN("boneh-go-nissim encryption is multiplicatively homomorphic") {
+			do {
+				rand_bytes((unsigned char *)&in, sizeof(dig_t));
+				in = in % 11;
+				out = in % 17;
+			} while (in == 0 || out == 0);
+			TEST_ASSERT(cp_bgn_enc1(c, in, pub) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_enc2(e, out, pub) == STS_OK, end);
+			in = in * out;
+			TEST_ASSERT(cp_bgn_mul(g, c, e) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_dec(&t, g, prv) == STS_OK, end);
+			TEST_ASSERT(in == t, end);
+			TEST_ASSERT(cp_bgn_add(g, g, g) == STS_OK, end);
+			TEST_ASSERT(cp_bgn_dec(&t, g, prv) == STS_OK, end);
+			TEST_ASSERT(in + in == t, end);
+		} TEST_END;
+
+	} CATCH_ANY {
+		ERROR(end);
+	}
+	code = STS_OK;
+
+  end:
+	g1_free(c[0]);
+	g1_free(c[1]);
+	g1_free(d[0]);
+	g1_free(d[1]);
+	g2_free(e[0]);
+	g2_free(e[1]);
+	g2_free(f[0]);
+	g2_free(f[1]);
+	bgn_free(pub);
+	bgn_free(prv);
+	for (int i = 0; i < 4; i++) {
+		gt_free(g[i]);
+	}
+	return code;
+}
+
 static int bls(void) {
 	int code = STS_ERR;
 	bn_t d;
@@ -885,6 +1042,7 @@ int main(void) {
 		core_clean();
 		return 1;
 	}
+
 #endif
 
 #if defined(WITH_EC)
@@ -929,6 +1087,17 @@ int main(void) {
 			core_clean();
 			return 1;
 		}
+
+		if (ibe() != STS_OK) {
+			core_clean();
+			return 1;
+		}
+
+		if (bgn() != STS_OK) {
+			core_clean();
+			return 1;
+		}
+
 
 		if (bls() != STS_OK) {
 			core_clean();
