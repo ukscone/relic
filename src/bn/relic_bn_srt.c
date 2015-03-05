@@ -23,41 +23,68 @@
 /**
  * @file
  *
- * Implementation of exponentiation in binary field extensions.
+ * Implementation of the multiple precision integer square root extraction.
  *
  * @version $Id$
- * @ingroup fbx
+ * @ingroup bn
  */
 
 #include "relic_core.h"
-#include "relic_fbx.h"
+#include "relic_bn_low.h"
 
 /*============================================================================*/
 /* Public definitions                                                         */
 /*============================================================================*/
 
-void fb4_exp(fb4_t c, fb4_t a, bn_t b) {
-	fb4_t t;
+void bn_srt(bn_t c, bn_t a) {
+	bn_t h, l, m, t;
+	int bits, cmp;
+	
+	if (bn_sign(a) == BN_NEG) {
+		THROW(ERR_NO_VALID);
+	}
+	
+	bits = bn_bits(a);
+	bits += (bits % 2);
+	
+	bn_null(h);
+	bn_null(l);
+	bn_null(m);
+	bn_null(t);	
+	
+	TRY{
+		bn_new(h);
+		bn_new(l);
+		bn_new(m);
+		bn_new(t);
+		
+		bn_set_2b(h, bits >> 1);
+		bn_set_2b(l, (bits >> 1) - 1);
+	
+		/* Trivial binary search approach. */
+		do {
+			bn_add(m, h, l);
+			bn_hlv(m, m);
+			bn_sqr(t, m);
+			cmp = bn_cmp(t, a);
 
-	fb4_null(t);
-
-	TRY {
-		fb4_new(t);
-
-		fb4_copy(t, a);
-
-		for (int i = bn_bits(b) - 2; i >= 0; i--) {
-			fb4_sqr(t, t);
-			if (bn_get_bit(b, i)) {
-				fb4_mul(t, t, a);
+			if (cmp == CMP_GT) {
+				bn_copy(h, m);
+			} else if (cmp == CMP_LT) {
+				bn_copy(l, m);
 			}
-		}
-		fb4_copy(c, t);
+			bn_sub(t, h, l);
+		} while (bn_cmp_dig(t, 1) == CMP_GT && cmp != CMP_EQ);
+
+		bn_copy(c, m);
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
 	}
 	FINALLY {
-		fb4_free(t);
+		bn_free(h);
+		bn_free(l);
+		bn_free(m);
+		bn_free(t);		
 	}
-}
+} 
