@@ -96,6 +96,7 @@ int cp_bgn_enc1(g1_t out[2], dig_t in, bgn_t pub) {
 
 		/* Compute c0 = (ym + r)G. */
 		g1_mul_dig(out[0], pub->gy, in);
+
 		g1_mul_gen(t, r);
 		g1_add(out[0], out[0], t);
 		g1_norm(out[0], out[0]);
@@ -121,7 +122,7 @@ int cp_bgn_enc1(g1_t out[2], dig_t in, bgn_t pub) {
 int cp_bgn_dec1(dig_t *out, g1_t in[2], bgn_t prv) {
 	bn_t r, n;
 	g1_t s, t, u;
-	int i, result = STS_OK;
+	int i, result = STS_ERR;
 
 	bn_null(n);
 	bn_null(r);
@@ -147,17 +148,20 @@ int cp_bgn_dec1(dig_t *out, g1_t in[2], bgn_t prv) {
 		bn_mod(r, r, n);
 		g1_mul_gen(s, r);
 		g1_copy(u, s);
-		for (i = 0; i < INT_MAX; i++) {
-			if (g1_cmp(t, u) == CMP_EQ) {
-				*out = i + 1;
-				break;
-			}
-			g1_add(u, u, s);
-			g1_norm(u, u);			
-		}
 
-		if (i == INT_MAX) {
-			result = STS_ERR;
+		if (g1_is_infty(t) == 1){
+			*out = 0;
+			result = STS_OK;
+		} else {
+			for (i = 0; i < INT_MAX; i++) {
+				if (g1_cmp(t, u) == CMP_EQ) {
+					*out = i + 1;
+					result = STS_OK;
+					break;
+				}
+				g1_add(u, u, s);
+				g1_norm(u, u);
+			}
 		}
 	} CATCH_ANY {
 		result = STS_ERR;
@@ -217,7 +221,7 @@ int cp_bgn_enc2(g2_t out[2], dig_t in, bgn_t pub) {
 int cp_bgn_dec2(dig_t *out, g2_t in[2], bgn_t prv) {
 	bn_t r, n;
 	g2_t s, t, u;
-	int i, result = STS_OK;
+	int i, result = STS_ERR;
 
 	bn_null(n);
 	bn_null(r);
@@ -243,17 +247,20 @@ int cp_bgn_dec2(dig_t *out, g2_t in[2], bgn_t prv) {
 		bn_mod(r, r, n);
 		g2_mul_gen(s, r);
 		g2_copy(u, s);
-		for (i = 0; i < INT_MAX; i++) {
-			if (g2_cmp(t, u) == CMP_EQ) {
-				*out = i + 1;
-				break;
+		
+		if (g2_is_infty(t) == 1) {
+			*out = 0;
+			result = STS_OK;
+		} else {
+			for (i = 0; i < INT_MAX; i++) {
+				if (g2_cmp(t, u) == CMP_EQ) {
+					*out = i + 1;
+					result = STS_OK;
+					break;
+				}
+				g2_add(u, u, s);
+				g2_norm(u, u);
 			}
-			g2_add(u, u, s);
-			g2_norm(u, u);			
-		}
-
-		if (i == INT_MAX) {
-			result = STS_ERR;
 		}
 	} CATCH_ANY {
 		result = STS_ERR;
@@ -286,7 +293,7 @@ int cp_bgn_mul(gt_t e[4], g1_t c[2], g2_t d[2]) {
 }
 
 int cp_bgn_dec(dig_t *out, gt_t in[4], bgn_t prv) {
-	int i, result = STS_OK;
+	int i, result = STS_ERR;
 	g1_t g;
 	g2_t h;
 	gt_t t[4];
@@ -338,16 +345,19 @@ int cp_bgn_dec(dig_t *out, gt_t in[4], bgn_t prv) {
 		gt_exp(t[1], t[1], r);
 
 		gt_copy(t[2], t[1]);
-		for (i = 0; i < INT_MAX; i++) {
-			if (gt_cmp(t[2], t[3]) == CMP_EQ) {
-				*out = i + 1;
-				break;
-			}
-			gt_mul(t[2], t[2], t[1]);
-		}
 
-		if (i == INT_MAX) {
-			result = STS_ERR;
+		if (gt_is_unity(t[3]) == 1) {
+			*out = 0;
+			result = STS_OK;
+		} else {
+			for (i = 0; i < INT_MAX; i++) {
+				if (gt_cmp(t[2], t[3]) == CMP_EQ) {
+					*out = i + 1;
+					result = STS_OK;
+					break;
+				}
+				gt_mul(t[2], t[2], t[1]);
+			}
 		}
 	} CATCH_ANY {
 		result = STS_ERR;

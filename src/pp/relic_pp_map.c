@@ -25,7 +25,6 @@
  *
  * Implementation of the pairings over prime curves.
  *
- * @version $Id$
  * @ingroup pp
  */
 
@@ -43,8 +42,8 @@
  *
  * @param[out] r			- the result.
  * @param[out] t			- the resulting point.
- * @param[in] p				- the first point of the pairing, in G_2.
- * @param[in] q				- the second point of the pairing, in G_1.
+ * @param[in] p				- the first pairing argument in affine coordinates.
+ * @param[in] q				- the second pairing argument in affine coordinates.
  * @param[in] a				- the loop parameter.
  */
 static void pp_mil_k2(fp2_t r, ep_t t, ep_t p, ep_t q, bn_t a) {
@@ -87,8 +86,8 @@ static void pp_mil_k2(fp2_t r, ep_t t, ep_t p, ep_t q, bn_t a) {
  *
  * @param[out] r			- the result.
  * @param[out] t			- the resulting point.
- * @param[in] p				- the first point of the pairing, in G_1.
- * @param[in] q				- the second point of the pairing, in G_2.
+ * @param[in] p				- the first pairing argument in affine coordinates.
+ * @param[in] q				- the second pairing argument in affine coordinates.
  * @param[in] a				- the loop parameter.
  */
 static void pp_mil_lit_k2(fp2_t r, ep_t t, ep_t p, ep_t q, bn_t a) {
@@ -138,8 +137,8 @@ static void pp_mil_lit_k2(fp2_t r, ep_t t, ep_t p, ep_t q, bn_t a) {
  *
  * @param[out] r			- the result.
  * @param[out] t			- the resulting point.
- * @param[in] q				- the first point of the pairing, in G_2.
- * @param[in] p				- the second point of the pairing, in G_1.
+ * @param[in] q				- the first pairing argument in affine coordinates.
+ * @param[in] p				- the second pairing argument in affine coordinates.
  * @param[in] a				- the loop parameter.
  */
 static void pp_mil_k12(fp12_t r, ep2_t t, ep2_t q, ep_t p, bn_t a) {
@@ -158,12 +157,11 @@ static void pp_mil_k12(fp12_t r, ep2_t t, ep2_t q, ep_t p, bn_t a) {
 
 		/* Precomputing. */
 #if EP_ADD == BASIC
-		fp_copy(_p->x, p->x);
-		fp_neg(_p->y, p->y);
+		ep_neg(_p, p);
 #else
-		fp_neg(_p->y, p->y);
 		fp_add(_p->x, p->x, p->x);
 		fp_add(_p->x, _p->x, p->x);
+		fp_neg(_p->y, p->y);
 #endif
 
 		pp_dbl_k12(r, t, t, _p);
@@ -196,8 +194,8 @@ static void pp_mil_k12(fp12_t r, ep2_t t, ep2_t q, ep_t p, bn_t a) {
  *
  * @param[out] r			- the result.
  * @param[out] t			- the resulting point.
- * @param[in] q				- the first point of the pairing, in G_2.
- * @param[in] p				- the second point of the pairing, in G_1.
+ * @param[in] q				- the first pairing argument in affine coordinates.
+ * @param[in] p				- the second pairing argument in affine coordinates.
  * @param[in] s				- the loop parameter in sparse form.
  * @paramin] len			- the length of the loop parameter.
  */
@@ -220,12 +218,11 @@ static void pp_mil_sps_k12(fp12_t r, ep2_t t, ep2_t q, ep_t p, int *s, int len) 
 		ep2_neg(_q, q);
 
 #if EP_ADD == BASIC
-		fp_copy(_p->x, p->x);
-		fp_neg(_p->y, p->y);
+		ep_neg(_p, p);
 #else
-		fp_neg(_p->y, p->y);
 		fp_add(_p->x, p->x, p->x);
 		fp_add(_p->x, _p->x, p->x);
+		fp_neg(_p->y, p->y);
 #endif
 
 		pp_dbl_k12(r, t, t, _p);
@@ -267,24 +264,28 @@ static void pp_mil_sps_k12(fp12_t r, ep2_t t, ep2_t q, ep_t p, int *s, int len) 
  *
  * @param[out] r			- the result.
  * @param[out] t			- the resulting point.
- * @param[in] p				- the first point of the pairing, in G_1.
- * @param[in] q				- the second point of the pairing, in G_2.
+ * @param[in] p				- the first pairing argument in affine coordinates.
+ * @param[in] q				- the second pairing argument in affine coordinates.
  * @param[in] a				- the loop parameter.
  */
 static void pp_mil_lit_k12(fp12_t r, ep_t t, ep_t p, ep2_t q, bn_t a) {
 	fp12_t l;
+	ep2_t _q;
 
 	fp12_null(l);
+	ep2_null(_q);
 
 	TRY {
 		fp12_new(l);
+		ep2_new(_q);
 
 		ep_copy(t, p);
+		ep2_neg(_q, q);
 		fp12_zero(l);
 
 		for (int i = bn_bits(a) - 2; i >= 0; i--) {
 			fp12_sqr(r, r);
-			pp_dbl_lit_k12(l, t, t, q);
+			pp_dbl_lit_k12(l, t, t, _q);
 			fp12_mul(r, r, l);
 			if (bn_get_bit(a, i)) {
 				pp_add_lit_k12(l, t, p, q);
@@ -297,6 +298,7 @@ static void pp_mil_lit_k12(fp12_t r, ep_t t, ep_t p, ep2_t q, bn_t a) {
 	}
 	FINALLY {
 		fp12_free(l);
+		ep2_free(_q);
 	}
 }
 
@@ -359,9 +361,11 @@ void pp_map_clean(void) {
 #if PP_MAP == TATEP || PP_MAP == OATEP || !defined(STRIP)
 
 void pp_map_tatep_k2(fp2_t r, ep_t p, ep_t q) {
-	ep_t t;
+	ep_t _p, _q, t;
 	bn_t n;
 
+	ep_null(_p);
+	ep_null(_q);
 	ep_null(t);
 	bn_null(n);
 
@@ -369,13 +373,15 @@ void pp_map_tatep_k2(fp2_t r, ep_t p, ep_t q) {
 		ep_new(t);
 		bn_new(n);
 
+		ep_norm(_p, p);
+		ep_norm(_q, q);
 		ep_curve_get_ord(n);
 		/* Since p has order n, we do not have to perform last iteration. */
 		bn_sub_dig(n, n, 1);
 		fp2_set_dig(r, 1);
 
-		if (!ep_is_infty(p) && !ep_is_infty(q)) {
-			pp_mil_k2(r, t, p, q, n);
+		if (!ep_is_infty(_p) && !ep_is_infty(_q)) {
+			pp_mil_k2(r, t, _p, _q, n);
 			pp_exp_k2(r, r);
 		}
 	}
@@ -383,6 +389,8 @@ void pp_map_tatep_k2(fp2_t r, ep_t p, ep_t q) {
 		THROW(ERR_CAUGHT);
 	}
 	FINALLY {
+		ep_free(_p);
+		ep_free(_q);
 		ep_free(t);
 		bn_free(n);
 	}
@@ -393,21 +401,28 @@ void pp_map_tatep_k2(fp2_t r, ep_t p, ep_t q) {
 #if PP_MAP == TATEP || !defined(STRIP)
 
 void pp_map_tatep_k12(fp12_t r, ep_t p, ep2_t q) {
-	ep_t t;
+	ep_t _p, t;
+	ep2_t _q;
 	bn_t n;
 
+	ep_null(_p);
 	ep_null(t);
+	ep2_null(_q);
 	bn_null(n);
 
 	TRY {
+		ep_new(_p);
 		ep_new(t);
+		ep2_new(_q);
 		bn_new(n);
 
+		ep_norm(_p, p);
+		ep2_norm(_q, q);
 		ep_curve_get_ord(n);
 		fp12_set_dig(r, 1);
 
-		if (!ep_is_infty(p) && !ep2_is_infty(q)) {
-			pp_mil_lit_k12(r, t, p, q, n);
+		if (!ep_is_infty(_p) && !ep2_is_infty(_q)) {
+			pp_mil_lit_k12(r, t, _p, _q, n);
 			pp_exp_k12(r, r);
 		}
 	}
@@ -415,7 +430,9 @@ void pp_map_tatep_k12(fp12_t r, ep_t p, ep2_t q) {
 		THROW(ERR_CAUGHT);
 	}
 	FINALLY {
+		ep_free(_p);
 		ep_free(t);
+		ep2_free(_q);
 		bn_free(n);
 	}
 }
@@ -425,11 +442,12 @@ void pp_map_tatep_k12(fp12_t r, ep_t p, ep2_t q) {
 #if PP_MAP == WEILP || !defined(STRIP)
 
 void pp_map_weilp_k2(fp2_t r, ep_t p, ep_t q) {
-	ep_t t0;
-	ep_t t1;
+	ep_t _p, _q, t0, t1;
 	fp2_t r0, r1;
 	bn_t n;
 
+	ep_null(_p);
+	ep_null(_q);
 	ep_null(t0);
 	ep_null(t1);
 	fp2_null(r0);
@@ -437,21 +455,25 @@ void pp_map_weilp_k2(fp2_t r, ep_t p, ep_t q) {
 	bn_null(n);
 
 	TRY {
+		ep_new(_p);
+		ep_new(_q);
 		ep_new(t0);
 		ep_new(t1);
 		fp2_new(r0);
 		fp2_new(r1);
 		bn_new(n);
 
+		ep_norm(_p, p);
+		ep_norm(_q, q);
 		ep_curve_get_ord(n);
 		/* Since p has order n, we do not have to perform last iteration. */
 		bn_sub_dig(n, n, 1);
 		fp2_set_dig(r0, 1);
 		fp2_set_dig(r1, 1);
 
-		if (!ep_is_infty(p) && !ep_is_infty(q)) {
-			pp_mil_lit_k2(r0, t0, p, q, n);
-			pp_mil_k2(r1, t1, q, p, n);
+		if (!ep_is_infty(_p) && !ep_is_infty(_q)) {
+			pp_mil_lit_k2(r0, t0, _p, _q, n);
+			pp_mil_k2(r1, t1, _q, _p, n);
 			fp2_inv(r1, r1);
 			fp2_mul(r0, r0, r1);
 			fp2_inv(r1, r0);
@@ -463,6 +485,8 @@ void pp_map_weilp_k2(fp2_t r, ep_t p, ep_t q) {
 		THROW(ERR_CAUGHT);
 	}
 	FINALLY {
+		ep_free(_p);
+		ep_free(_q);
 		ep_free(t0);
 		ep_free(t1);
 		fp2_free(r0);
@@ -472,31 +496,38 @@ void pp_map_weilp_k2(fp2_t r, ep_t p, ep_t q) {
 }
 
 void pp_map_weilp_k12(fp12_t r, ep_t p, ep2_t q) {
-	ep_t t0;
-	ep2_t t1;
+	ep_t _p, t0;
+	ep2_t _q, t1;
 	fp12_t r0, r1;
 	bn_t n;
 
+	ep_null(_p);
 	ep_null(t0);
+	ep2_null(_q);
 	ep2_null(t1);
 	fp12_null(r0);
 	fp12_null(r1);
 	bn_null(n);
 
 	TRY {
+		ep_new(_p);
 		ep_new(t0);
+		ep2_new(_q);
 		ep2_new(t1);
 		fp12_new(r0);
 		fp12_new(r1);
 		bn_new(n);
 
+		ep_norm(_p, p);
+		ep2_norm(_q, q);
 		ep_curve_get_ord(n);
+		bn_sub_dig(n, n, 1);
 		fp12_set_dig(r0, 1);
 		fp12_set_dig(r1, 1);
 
-		if (!ep_is_infty(p) && !ep2_is_infty(q)) {
-			pp_mil_lit_k12(r0, t0, p, q, n);
-			pp_mil_k12(r1, t1, q, p, n);
+		if (!ep_is_infty(_p) && !ep2_is_infty(_q)) {
+			pp_mil_lit_k12(r0, t0, _p, _q, n);
+			pp_mil_k12(r1, t1, _q, _p, n);
 			fp12_inv(r1, r1);
 			fp12_mul(r0, r0, r1);
 			fp12_inv(r1, r0);
@@ -508,7 +539,9 @@ void pp_map_weilp_k12(fp12_t r, ep_t p, ep2_t q) {
 		THROW(ERR_CAUGHT);
 	}
 	FINALLY {
+		ep_free(_p);
 		ep_free(t0);
+		ep2_free(_q);
 		ep2_free(t1);
 		fp12_free(r0);
 		fp12_free(r1);
@@ -522,17 +555,25 @@ void pp_map_weilp_k12(fp12_t r, ep_t p, ep2_t q) {
 #if PP_MAP == OATEP || !defined(STRIP)
 
 void pp_map_oatep_k12(fp12_t r, ep_t p, ep2_t q) {
-	ep2_t t;
+	ep_t _p;
+	ep2_t t, _q;
 	bn_t a;
 	int len = FP_BITS, s[FP_BITS];
 
+	ep_null(_p);
+	ep2_null(_q);	
 	ep2_null(t);
 	bn_null(a);
 
 	TRY {
+		ep_new(_p);
+		ep2_new(_q);
 		ep2_new(t);
 		bn_new(a);
 
+
+		ep_norm(_p, p);
+		ep2_norm(_q, q);
 		fp_param_get_var(a);
 		bn_mul_dig(a, a, 6);
 		bn_add_dig(a, a, 2);
@@ -546,18 +587,18 @@ void pp_map_oatep_k12(fp12_t r, ep_t p, ep2_t q) {
 				case BN_P256:
 				case BN_P638:
 					/* r = f_{|a|,Q}(P). */
-					pp_mil_sps_k12(r, t, q, p, s, len);
+					pp_mil_sps_k12(r, t, _q, _p, s, len);
 					if (bn_sign(a) == BN_NEG) {
 						/* f_{-a,Q}(P) = 1/f_{a,Q}(P). */
 						fp12_inv_uni(r, r);
 						ep2_neg(t, t);
 					}
-					pp_fin_k12_oatep(r, t, q, p);
+					pp_fin_k12_oatep(r, t, _q, _p);
 					pp_exp_k12(r, r);
 					break;
 				case B12_P638:
 					/* r = f_{|a|,Q}(P). */
-					pp_mil_sps_k12(r, t, q, p, s, len);
+					pp_mil_sps_k12(r, t, _q, _p, s, len);
 					if (bn_sign(a) == BN_NEG) {
 						fp12_inv_uni(r, r);
 						ep2_neg(t, t);
@@ -571,6 +612,8 @@ void pp_map_oatep_k12(fp12_t r, ep_t p, ep2_t q) {
 		THROW(ERR_CAUGHT);
 	}
 	FINALLY {
+		ep_free(_p);
+		ep2_free(_q);
 		ep2_free(t);
 		bn_free(a);
 	}
